@@ -1,10 +1,10 @@
-// js/utils/memory.js
-
-// Firebase Imports
+// Import Firebase Modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { 
+    getFirestore, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
-// Firebase Config (Using Your Provided Credentials)
+// Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyDtNedkJo6ikNneZZdrheiWbE3Dn2B8kwQ",
     authDomain: "ces-project-f8b4e.firebaseapp.com",
@@ -24,7 +24,7 @@ const db = getFirestore(app);
 const MEMORY_COLLECTION = "genesis";
 
 /**
- * Save a conversation memory to Firestore.
+ * Save a conversation message to Firestore.
  * @param {string} userId - The user identifier.
  * @param {string} message - The conversation text.
  * @returns {Promise<void>}
@@ -34,7 +34,7 @@ export async function saveMemory(userId, message) {
         const docRef = await addDoc(collection(db, MEMORY_COLLECTION), {
             userId: userId,
             message: message,
-            timestamp: new Date().toISOString()
+            timestamp: serverTimestamp() // Firestore sets the exact time
         });
         console.log("✅ Memory saved with ID:", docRef.id);
     } catch (error) {
@@ -43,25 +43,24 @@ export async function saveMemory(userId, message) {
 }
 
 /**
- * Retrieve conversation history from Firestore.
- * @param {string} userId - The user identifier.
+ * Retrieve past conversation history from Firestore.
  * @param {number} limitResults - Number of messages to retrieve.
  * @returns {Promise<Array>} - Returns an array of memory messages.
  */
-export async function getMemory(userId, limitResults = 10) {
+export async function getMemory(limitResults = 10) {
     try {
         const q = query(
             collection(db, MEMORY_COLLECTION),
-            where("userId", "==", userId),
-            orderBy("timestamp", "desc"),
-            limit(limitResults)
+            orderBy("timestamp", "desc") // Latest messages first
         );
 
         const querySnapshot = await getDocs(q);
         let messages = [];
 
         querySnapshot.forEach((doc) => {
-            messages.push(doc.data());
+            let data = doc.data();
+            let formattedDate = data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : "N/A";
+            messages.push({ id: doc.id, ...data, created_at: formattedDate });
         });
 
         return messages;
@@ -69,4 +68,27 @@ export async function getMemory(userId, limitResults = 10) {
         console.error("❌ Error retrieving memory:", error);
         return [];
     }
+}
+
+/**
+ * Listen to real-time updates from Firestore.
+ * @param {Function} callback - Function to execute when data changes.
+ */
+export function listenToMemory(callback) {
+    const q = query(
+        collection(db, MEMORY_COLLECTION),
+        orderBy("timestamp", "desc")
+    );
+
+    onSnapshot(q, (querySnapshot) => {
+        let messages = [];
+
+        querySnapshot.forEach((doc) => {
+            let data = doc.data();
+            let formattedDate = data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : "N/A";
+            messages.push({ id: doc.id, ...data, created_at: formattedDate });
+        });
+
+        callback(messages);
+    });
 }
