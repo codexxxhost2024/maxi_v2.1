@@ -34,9 +34,9 @@ export async function saveMemory(userId, message) {
         const docRef = await addDoc(collection(db, MEMORY_COLLECTION), {
             userId: userId,
             message: message,
-            timestamp: serverTimestamp() // Firestore sets the exact time
+            timestamp: serverTimestamp() // Firestore auto-generates timestamp
         });
-        console.log("✅ Memory saved with ID:", docRef.id);
+        console.log("✅ Memory saved:", docRef.id);
     } catch (error) {
         console.error("❌ Error saving memory:", error);
     }
@@ -51,7 +51,7 @@ export async function getMemory(limitResults = 10) {
     try {
         const q = query(
             collection(db, MEMORY_COLLECTION),
-            orderBy("timestamp", "desc") // Latest messages first
+            orderBy("timestamp", "desc") // Sort messages by date (latest first)
         );
 
         const querySnapshot = await getDocs(q);
@@ -59,7 +59,7 @@ export async function getMemory(limitResults = 10) {
 
         querySnapshot.forEach((doc) => {
             let data = doc.data();
-            let formattedDate = data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : "N/A";
+            let formattedDate = data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : "No Date";
             messages.push({ id: doc.id, ...data, created_at: formattedDate });
         });
 
@@ -85,7 +85,7 @@ export function listenToMemory(callback) {
 
         querySnapshot.forEach((doc) => {
             let data = doc.data();
-            let formattedDate = data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : "N/A";
+            let formattedDate = data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString() : "No Date";
             messages.push({ id: doc.id, ...data, created_at: formattedDate });
         });
 
