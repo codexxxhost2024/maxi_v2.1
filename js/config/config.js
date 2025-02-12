@@ -21,7 +21,7 @@ Maging handa sa bawat hamon at ipamalas ang iyong husay sa industriya ng MLM. Si
     },
     // Model's voice configuration (choose one from: Puck, Charon, Kore, Fenrir, Aoede)
     VOICE: {
-        NAME: 'Aoede' // Default voice: Aoede (female)
+        NAME: 'Fenrir' // Default voice: Aoede (female)
     },
     // Default audio settings
     AUDIO: {
